@@ -3,8 +3,8 @@ plugins {
     id 'io.freefair.lombok' version '6.5.1'
 }
 
-group 'ru.netology'
-version '1.0-SNAPSHOT'
+group = 'ru.netology'
+version = '1.0-SNAPSHOT'
 
 sourceCompatibility = 11
 compileJava.options.encoding = "UTF-8"
@@ -23,5 +23,39 @@ dependencies {
 
 test {
     useJUnitPlatform()
-    systemProperty 'selenide.headless', System.getProperty('selenide.headless')
+
+    // Настройки для Selenide
+    systemProperty 'selenide.headless', System.getProperty('selenide.headless', 'true')
+    systemProperty 'selenide.browser', 'chrome'
+    systemProperty 'selenide.pageLoadStrategy', 'eager'
+    systemProperty 'selenide.timeout', '10000'
+
+    // Настройки для Chrome в headless режиме
+    systemProperty 'chromeoptions.args',
+            '--disable-dev-shm-usage,' +
+                    '--no-sandbox,' +
+                    '--disable-gpu,' +
+                    '--disable-software-rasterizer,' +
+                    '--remote-debugging-port=9222,' +
+                    '--window-size=1920,1080,' +
+                    '--disable-infobars,' +
+                    '--disable-extensions,' +
+                    '--disable-notifications'
+
+    // Дополнительные системные свойства
+    systemProperty 'webdriver.chrome.driver', System.getProperty('webdriver.chrome.driver', '')
+    systemProperty 'webdriver.chrome.whitelistedIps', ''
+    systemProperty 'webdriver.http.factory', 'netty'
+
+    // Включение детального логирования для отладки
+    if (System.getProperty('debug', 'false') == 'true') {
+        systemProperty 'selenide.remote', System.getProperty('selenide.remote', '')
+        systemProperty 'selenide.remoteReadTimeout', '90000'
+        testLogging {
+            events "passed", "skipped", "failed", "standardOut", "standardError"
+            showExceptions = true
+            showStackTraces = true
+            showCauses = true
+        }
+    }
 }
