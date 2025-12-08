@@ -1,14 +1,11 @@
 plugins {
     id 'java'
-    id 'io.freefair.lombok' version '6.5.1'
 }
 
 group = 'ru.netology'
 version = '1.0-SNAPSHOT'
 
 sourceCompatibility = 11
-targetCompatibility = 11
-
 compileJava.options.encoding = "UTF-8"
 compileTestJava.options.encoding = "UTF-8"
 
@@ -19,79 +16,10 @@ repositories {
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
     testImplementation 'com.codeborne:selenide:6.17.2'
-    testImplementation 'com.github.javafaker:javafaker:1.0.2'
     testImplementation 'org.slf4j:slf4j-simple:2.0.7'
 }
 
 test {
     useJUnitPlatform()
-
-    // Передаем все системные свойства в тесты
-    systemProperties = System.properties
-
-    // Базовые настройки Selenide (могут быть переопределены через системные свойства)
     systemProperty 'selenide.headless', System.getProperty('selenide.headless', 'true')
-    systemProperty 'selenide.browser', System.getProperty('selenide.browser', 'chrome')
-    systemProperty 'selenide.pageLoadStrategy', System.getProperty('selenide.pageLoadStrategy', 'eager')
-    systemProperty 'selenide.timeout', System.getProperty('selenide.timeout', '10000')
-    systemProperty 'selenide.browserSize', System.getProperty('selenide.browserSize', '1920x1080')
-
-    // Настройки для Chrome
-    systemProperty 'chromeoptions.args',
-            '--disable-dev-shm-usage,' +
-                    '--no-sandbox,' +
-                    '--disable-gpu,' +
-                    '--disable-software-rasterizer,' +
-                    '--remote-debugging-port=9222,' +
-                    '--window-size=1920,1080,' +
-                    '--disable-infobars,' +
-                    '--disable-extensions,' +
-                    '--disable-notifications'
-
-    // Увеличиваем память для тестов
-    maxHeapSize = "1024m"
-
-    // Логирование для отладки
-    testLogging {
-        events "passed", "skipped", "failed", "standard_out", "standard_error"
-        exceptionFormat "full"
-        showStandardStreams = true
-        showExceptions = true
-        showStackTraces = true
-        showCauses = true
-    }
-
-    // Не прерывать сборку при первой ошибке
-    failFast = false
-
-    // Параллельный запуск тестов (опционально)
-    // maxParallelForks = Runtime.runtime.availableProcessors()
-}
-
-// Задача для проверки конфигурации
-task checkConfig {
-    doLast {
-        println "=== Проверка конфигурации ==="
-        println "Java version: ${JavaVersion.current()}"
-        println "Source compatibility: $sourceCompatibility"
-        println "Target compatibility: $targetCompatibility"
-        println "Test system properties:"
-        test.systemProperties.each { key, value ->
-            println "  $key = $value"
-        }
-    }
-}
-
-// Задача для запуска с отладкой
-task debugTest(type: Test) {
-    useJUnitPlatform()
-    systemProperties = System.properties
-    systemProperty 'selenide.headless', 'false'
-    systemProperty 'selenide.timeout', '30000'
-
-    testLogging {
-        events "passed", "skipped", "failed", "standard_out", "standard_error"
-        exceptionFormat "full"
-        showStandardStreams = true
-    }
 }

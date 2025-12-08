@@ -1,182 +1,59 @@
 name: Java CI with Gradle
 
-on:
-  push:
-    branches: [ "main", "master" ]
-  pull_request:
-    branches: [ "main", "master" ]
+on: [push, pull_request]
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v4  # Обновлено с v2 на v4
 
       - name: Set up JDK 11
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v4  # Обновлено с v2 на v4
         with:
           java-version: '11'
-          distribution: 'temurin'
-          cache: gradle
+          distribution: 'temurin'  # Заменено 'adopt' на 'temurin'
+          cache: gradle  # Добавлено кэширование для ускорения сборки
 
-      - name: Setup Chrome and Chromedriver
+      - name: Setup Chrome for Selenide tests
         uses: browser-actions/setup-chrome@v1
         with:
-          chrome-version: 'stable'
+          chrome-version: 'stable'  # Установка последней стабильной версии Chrome
 
-      - name: Verify Chrome installation
-        run: |
-          echo "=== Установленные версии ==="
-          echo "Java version:"
-          java -version
-          echo ""
-          echo "Chrome version:"
-          google-chrome --version || echo "Google Chrome не найден"
-          echo ""
-          echo "ChromeDriver version:"
-          chromedriver --version || echo "ChromeDriver не найден"
-          echo ""
-          echo "Chrome location:"
-          which google-chrome || echo "Google Chrome не найден в PATH"
-          echo "ChromeDriver location:"
-          which chromedriver || echo "ChromeDriver не найден в PATH"
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
 
-      - name: Check application JAR
-        id: check-jar
-        run: |
-          echo "=== Проверка JAR файла приложения ==="
-          if [ -f "artifacts/app-ibank-build-for-testers.jar" ]; then
-            echo "✅ JAR файл найден: artifacts/app-ibank-build-for-testers.jar"
-            JAR_SIZE=$(ls -lh "artifacts/app-ibank-build-for-testers.jar" | awk '{print $5}')
-            echo "Размер файла: $JAR_SIZE"
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "❌ JAR файл не найден: artifacts/app-ibank-build-for-testers.jar"
-            echo "Содержимое директории artifacts/:"
-            ls -la artifacts/ 2>/dev/null || echo "Директория artifacts не существует"
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
+      - name: Start SUT (System Under Test)
+        # Запускаем приложение в фоновом режиме
+        run: java -jar ./artifacts/app-ibank-build-for-testers.jar &
+        env:
+          SERVER_PORT: 9999  # Указываем порт (если приложение его использует)
 
-      - name: Start application
-        if: steps.check-jar.outputs.exists == 'true'
+      - name: Wait for SUT to start
+        # Ждем запуска приложения
         run: |
-          echo "=== Запуск приложения ==="
-          
-          # Убиваем все процессы на порту 9999
-          echo "Освобождаем порт 9999..."
-          sudo fuser -k 9999/tcp 2>/dev/null || true
-          sleep 2
-          
-          # Проверяем, свободен ли порт
-          if lsof -Pi :9999 -sTCP:LISTEN -t >/dev/null ; then
-            echo "⚠️  Порт 9999 все еще занят, пытаемся освободить..."
-            sudo kill -9 $(sudo lsof -t -i:9999) 2>/dev/null || true
-            sleep 3
-          fi
-          
-          echo "Запускаем приложение..."
-          java -jar artifacts/app-ibank-build-for-testers.jar > app.log 2>&1 &
-          APP_PID=$!
-          echo "PID приложения: $APP_PID"
-          echo $APP_PID > app.pid
-          
-          # Ждем запуска приложения
-          echo "Ожидаем запуска приложения (макс. 30 секунд)..."
+          echo "Waiting for SUT to start on port 9999..."
           for i in {1..30}; do
-            if curl -s -f http://localhost:9999 >/dev/null 2>&1; then
-              echo "✅ Приложение успешно запущено на http://localhost:9999"
-          
-              # Проверяем ответ приложения
-              RESPONSE=$(curl -s http://localhost:9999 | head -c 100)
-              echo "Ответ приложения (первые 100 символов): $RESPONSE"
-              break
+            if curl -s http://localhost:9999 >/dev/null; then
+              echo "SUT started successfully!"
+              exit 0
             fi
-          
-            if [ $i -eq 30 ]; then
-              echo "❌ Приложение не запустилось за 30 секунд"
-              echo "=== Логи приложения ==="
-              tail -100 app.log
-              echo "=== Проверка процессов ==="
-              ps aux | grep java
-              echo "=== Проверка портов ==="
-              netstat -tulpn | grep :9999 || echo "Порт 9999 не слушается"
-              exit 1
-            fi
-          
             sleep 1
-            echo -n "."
           done
-          
-          echo "Приложение готово к тестированию"
+          echo "SUT failed to start!"
+          exit 1
 
-      - name: Run Gradle tests
-        run: |
-          echo "=== Запуск тестов ==="
-          
-          # Устанавливаем переменные окружения
-          export CHROMEDRIVER_PATH=$(which chromedriver)
-          export CHROME_BINARY_PATH=$(which google-chrome)
-          
-          echo "Используемые пути:"
-          echo "ChromeDriver: $CHROMEDRIVER_PATH"
-          echo "Chrome binary: $CHROME_BINARY_PATH"
-          
-          # Проверяем доступность ChromeDriver
-          if [ ! -f "$CHROMEDRIVER_PATH" ]; then
-            echo "❌ ChromeDriver не найден по пути: $CHROMEDRIVER_PATH"
-            exit 1
-          fi
-          
-          # Запускаем тесты с подробным выводом
-          ./gradlew test --info --stacktrace \
-            -Dwebdriver.chrome.driver="$CHROMEDRIVER_PATH" \
-            -Dwebdriver.chrome.binary="$CHROME_BINARY_PATH" \
-            -Dselenide.browser="chrome" \
-            -Dselenide.headless="true" \
-            -Dselenide.browserSize="1920x1080" \
-            -Dselenide.timeout="15000" \
-            -Dselenide.pageLoadStrategy="eager" \
-            -Dselenide.remote="http://localhost:9999" \
-            -Dchromeoptions.args="--disable-dev-shm-usage,--no-sandbox,--disable-gpu,--remote-debugging-port=9222,--window-size=1920,1080,--disable-infobars,--disable-extensions,--disable-notifications,--disable-popup-blocking"
+      - name: Build and test with Gradle
+        # Запускаем автотесты с параметром для headless режима
+        run: ./gradlew test --info -Dselenide.headless=true
 
-      - name: Upload test reports
-        if: always()
-        uses: actions/upload-artifact@v3
+      - name: Upload test results
+        if: always()  # Загружаем результаты даже если тесты упали
+        uses: actions/upload-artifact@v4
         with:
-          name: test-reports
+          name: test-results
           path: |
             build/reports/tests/
             build/test-results/
-            app.log
           retention-days: 7
-
-      - name: Cleanup
-        if: always()
-        run: |
-          echo "=== Очистка ==="
-          
-          # Останавливаем приложение
-          if [ -f "app.pid" ]; then
-            APP_PID=$(cat app.pid)
-            echo "Останавливаем приложение с PID: $APP_PID"
-            kill -9 $APP_PID 2>/dev/null || true
-            rm -f app.pid
-          fi
-          
-          # Убиваем все процессы на порту 9999
-          sudo fuser -k 9999/tcp 2>/dev/null || true
-          
-          # Удаляем временные файлы
-          rm -f app.log
-          
-          echo "Очистка завершена"
-
-      - name: Notify on failure
-        if: failure()
-        run: |
-          echo "❌ Тесты завершились с ошибкой"
-          echo "Проверьте артефакты 'test-reports' для деталей"
