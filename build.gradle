@@ -7,6 +7,8 @@ group = 'ru.netology'
 version = '1.0-SNAPSHOT'
 
 sourceCompatibility = 11
+targetCompatibility = 11
+
 compileJava.options.encoding = "UTF-8"
 compileTestJava.options.encoding = "UTF-8"
 
@@ -24,13 +26,17 @@ dependencies {
 test {
     useJUnitPlatform()
 
-    // Настройки для Selenide
-    systemProperty 'selenide.headless', System.getProperty('selenide.headless', 'true')
-    systemProperty 'selenide.browser', 'chrome'
-    systemProperty 'selenide.pageLoadStrategy', 'eager'
-    systemProperty 'selenide.timeout', '10000'
+    // Передаем все системные свойства в тесты
+    systemProperties = System.properties
 
-    // Настройки для Chrome в headless режиме
+    // Базовые настройки Selenide (могут быть переопределены через системные свойства)
+    systemProperty 'selenide.headless', System.getProperty('selenide.headless', 'true')
+    systemProperty 'selenide.browser', System.getProperty('selenide.browser', 'chrome')
+    systemProperty 'selenide.pageLoadStrategy', System.getProperty('selenide.pageLoadStrategy', 'eager')
+    systemProperty 'selenide.timeout', System.getProperty('selenide.timeout', '10000')
+    systemProperty 'selenide.browserSize', System.getProperty('selenide.browserSize', '1920x1080')
+
+    // Настройки для Chrome
     systemProperty 'chromeoptions.args',
             '--disable-dev-shm-usage,' +
                     '--no-sandbox,' +
@@ -42,20 +48,50 @@ test {
                     '--disable-extensions,' +
                     '--disable-notifications'
 
-    // Дополнительные системные свойства
-    systemProperty 'webdriver.chrome.driver', System.getProperty('webdriver.chrome.driver', '')
-    systemProperty 'webdriver.chrome.whitelistedIps', ''
-    systemProperty 'webdriver.http.factory', 'netty'
+    // Увеличиваем память для тестов
+    maxHeapSize = "1024m"
 
-    // Включение детального логирования для отладки
-    if (System.getProperty('debug', 'false') == 'true') {
-        systemProperty 'selenide.remote', System.getProperty('selenide.remote', '')
-        systemProperty 'selenide.remoteReadTimeout', '90000'
-        testLogging {
-            events "passed", "skipped", "failed", "standardOut", "standardError"
-            showExceptions = true
-            showStackTraces = true
-            showCauses = true
+    // Логирование для отладки
+    testLogging {
+        events "passed", "skipped", "failed", "standard_out", "standard_error"
+        exceptionFormat "full"
+        showStandardStreams = true
+        showExceptions = true
+        showStackTraces = true
+        showCauses = true
+    }
+
+    // Не прерывать сборку при первой ошибке
+    failFast = false
+
+    // Параллельный запуск тестов (опционально)
+    // maxParallelForks = Runtime.runtime.availableProcessors()
+}
+
+// Задача для проверки конфигурации
+task checkConfig {
+    doLast {
+        println "=== Проверка конфигурации ==="
+        println "Java version: ${JavaVersion.current()}"
+        println "Source compatibility: $sourceCompatibility"
+        println "Target compatibility: $targetCompatibility"
+        println "Test system properties:"
+        test.systemProperties.each { key, value ->
+            println "  $key = $value"
         }
+    }
+}
+
+// Задача для запуска с отладкой
+task debugTest(type: Test) {
+    useJUnitPlatform()
+    systemProperties = System.properties
+    systemProperty 'selenide.headless', 'false'
+    systemProperty 'selenide.timeout', '30000'
+
+    testLogging {
+        events "passed", "skipped", "failed", "standard_out", "standard_error"
+        exceptionFormat "full"
+        showStandardStreams = true
     }
 }

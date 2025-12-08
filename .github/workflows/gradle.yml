@@ -2,60 +2,181 @@ name: Java CI with Gradle
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main", "master" ]
   pull_request:
-    branches: [ main ]
+    branches: [ "main", "master" ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Make gradlew executable
-        run: chmod +x gradlew
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Set up JDK 11
         uses: actions/setup-java@v4
         with:
           java-version: '11'
-          distribution: 'adopt'
+          distribution: 'temurin'
+          cache: gradle
 
-      - name: Setup Chrome and ChromeDriver
+      - name: Setup Chrome and Chromedriver
         uses: browser-actions/setup-chrome@v1
         with:
-          chrome-version: 'latest'
-          install-chromedriver: true
+          chrome-version: 'stable'
 
-      - name: Verify Chrome and ChromeDriver installation
+      - name: Verify Chrome installation
         run: |
+          echo "=== Установленные версии ==="
+          echo "Java version:"
+          java -version
+          echo ""
           echo "Chrome version:"
-          google-chrome --version
+          google-chrome --version || echo "Google Chrome не найден"
+          echo ""
           echo "ChromeDriver version:"
-          chromedriver --version
+          chromedriver --version || echo "ChromeDriver не найден"
+          echo ""
           echo "Chrome location:"
-          which google-chrome
+          which google-chrome || echo "Google Chrome не найден в PATH"
           echo "ChromeDriver location:"
-          which chromedriver
+          which chromedriver || echo "ChromeDriver не найден в PATH"
 
-      - name: Start test application
+      - name: Check application JAR
+        id: check-jar
         run: |
-          echo "Starting test application on port 9999..."
-          java -jar artifacts/app-ibank-build-for-testers.jar --port=9999 &
-          echo "Waiting 15 seconds for app to start..."
-          sleep 15
-          echo "Checking if app is running..."
-          curl -s http://localhost:9999 || echo "App might not be fully started yet"
+          echo "=== Проверка JAR файла приложения ==="
+          if [ -f "artifacts/app-ibank-build-for-testers.jar" ]; then
+            echo "✅ JAR файл найден: artifacts/app-ibank-build-for-testers.jar"
+            JAR_SIZE=$(ls -lh "artifacts/app-ibank-build-for-testers.jar" | awk '{print $5}')
+            echo "Размер файла: $JAR_SIZE"
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ JAR файл не найден: artifacts/app-ibank-build-for-testers.jar"
+            echo "Содержимое директории artifacts/:"
+            ls -la artifacts/ 2>/dev/null || echo "Директория artifacts не существует"
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Run tests with Gradle
-        run: ./gradlew test --info
+      - name: Start application
+        if: steps.check-jar.outputs.exists == 'true'
+        run: |
+          echo "=== Запуск приложения ==="
+          
+          # Убиваем все процессы на порту 9999
+          echo "Освобождаем порт 9999..."
+          sudo fuser -k 9999/tcp 2>/dev/null || true
+          sleep 2
+          
+          # Проверяем, свободен ли порт
+          if lsof -Pi :9999 -sTCP:LISTEN -t >/dev/null ; then
+            echo "⚠️  Порт 9999 все еще занят, пытаемся освободить..."
+            sudo kill -9 $(sudo lsof -t -i:9999) 2>/dev/null || true
+            sleep 3
+          fi
+          
+          echo "Запускаем приложение..."
+          java -jar artifacts/app-ibank-build-for-testers.jar > app.log 2>&1 &
+          APP_PID=$!
+          echo "PID приложения: $APP_PID"
+          echo $APP_PID > app.pid
+          
+          # Ждем запуска приложения
+          echo "Ожидаем запуска приложения (макс. 30 секунд)..."
+          for i in {1..30}; do
+            if curl -s -f http://localhost:9999 >/dev/null 2>&1; then
+              echo "✅ Приложение успешно запущено на http://localhost:9999"
+          
+              # Проверяем ответ приложения
+              RESPONSE=$(curl -s http://localhost:9999 | head -c 100)
+              echo "Ответ приложения (первые 100 символов): $RESPONSE"
+              break
+            fi
+          
+            if [ $i -eq 30 ]; then
+              echo "❌ Приложение не запустилось за 30 секунд"
+              echo "=== Логи приложения ==="
+              tail -100 app.log
+              echo "=== Проверка процессов ==="
+              ps aux | grep java
+              echo "=== Проверка портов ==="
+              netstat -tulpn | grep :9999 || echo "Порт 9999 не слушается"
+              exit 1
+            fi
+          
+            sleep 1
+            echo -n "."
+          done
+          
+          echo "Приложение готово к тестированию"
+
+      - name: Run Gradle tests
+        run: |
+          echo "=== Запуск тестов ==="
+          
+          # Устанавливаем переменные окружения
+          export CHROMEDRIVER_PATH=$(which chromedriver)
+          export CHROME_BINARY_PATH=$(which google-chrome)
+          
+          echo "Используемые пути:"
+          echo "ChromeDriver: $CHROMEDRIVER_PATH"
+          echo "Chrome binary: $CHROME_BINARY_PATH"
+          
+          # Проверяем доступность ChromeDriver
+          if [ ! -f "$CHROMEDRIVER_PATH" ]; then
+            echo "❌ ChromeDriver не найден по пути: $CHROMEDRIVER_PATH"
+            exit 1
+          fi
+          
+          # Запускаем тесты с подробным выводом
+          ./gradlew test --info --stacktrace \
+            -Dwebdriver.chrome.driver="$CHROMEDRIVER_PATH" \
+            -Dwebdriver.chrome.binary="$CHROME_BINARY_PATH" \
+            -Dselenide.browser="chrome" \
+            -Dselenide.headless="true" \
+            -Dselenide.browserSize="1920x1080" \
+            -Dselenide.timeout="15000" \
+            -Dselenide.pageLoadStrategy="eager" \
+            -Dselenide.remote="http://localhost:9999" \
+            -Dchromeoptions.args="--disable-dev-shm-usage,--no-sandbox,--disable-gpu,--remote-debugging-port=9222,--window-size=1920,1080,--disable-infobars,--disable-extensions,--disable-notifications,--disable-popup-blocking"
 
       - name: Upload test reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: test-reports
           path: |
             build/reports/tests/
             build/test-results/
+            app.log
+          retention-days: 7
+
+      - name: Cleanup
+        if: always()
+        run: |
+          echo "=== Очистка ==="
+          
+          # Останавливаем приложение
+          if [ -f "app.pid" ]; then
+            APP_PID=$(cat app.pid)
+            echo "Останавливаем приложение с PID: $APP_PID"
+            kill -9 $APP_PID 2>/dev/null || true
+            rm -f app.pid
+          fi
+          
+          # Убиваем все процессы на порту 9999
+          sudo fuser -k 9999/tcp 2>/dev/null || true
+          
+          # Удаляем временные файлы
+          rm -f app.log
+          
+          echo "Очистка завершена"
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Тесты завершились с ошибкой"
+          echo "Проверьте артефакты 'test-reports' для деталей"
