@@ -22,31 +22,34 @@ jobs:
           java-version: '11'
           distribution: 'adopt'
 
-      - name: Setup Chrome
+      - name: Setup Chrome and ChromeDriver
         uses: browser-actions/setup-chrome@v1
         with:
           chrome-version: 'latest'
+          install-chromedriver: true
 
-      - name: Install dependencies
+      - name: Verify Chrome and ChromeDriver installation
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libgbm1 wget unzip
-
-      - name: Verify Chrome installation
-        run: |
+          echo "Chrome version:"
           google-chrome --version
+          echo "ChromeDriver version:"
+          chromedriver --version
+          echo "Chrome location:"
           which google-chrome
+          echo "ChromeDriver location:"
+          which chromedriver
 
       - name: Start test application
         run: |
+          echo "Starting test application on port 9999..."
           java -jar artifacts/app-ibank-build-for-testers.jar --port=9999 &
-          echo "Waiting for app to start..."
+          echo "Waiting 15 seconds for app to start..."
           sleep 15
+          echo "Checking if app is running..."
+          curl -s http://localhost:9999 || echo "App might not be fully started yet"
 
       - name: Run tests with Gradle
         run: ./gradlew test --info
-        env:
-          DISPLAY: ':99'
 
       - name: Upload test reports
         if: always()
