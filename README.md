@@ -1,4 +1,5 @@
 # IBank Automation Tests
+[![Java CI with Gradle](https://github.com/nazarov23/ibank-bdd-tests/actions/workflows/gradle.yml/badge.svg)](https://github.com/nazarov23/ibank-bdd-tests/actions/workflows/gradle.yml)
 
 Автоматизированные тесты для интернет-банка IBank
 
