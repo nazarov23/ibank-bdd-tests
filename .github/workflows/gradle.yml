@@ -13,7 +13,6 @@ jobs:
         uses: actions/setup-java@v2
         with:
           java-version: '11'
-          distribution: 'adopt'
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -21,6 +20,11 @@ jobs:
       - name: Start SUT
         run: |
           java -jar ./artifacts/app-ibank-build-for-testers.jar &
+          sleep 3
 
       - name: Build with Gradle
         run: ./gradlew test --info -Dselenide.headless=true
+
+      - name: Stop SUT
+        if: always()
+        run: pkill -f 'app-ibank-build-for-testers.jar' || true

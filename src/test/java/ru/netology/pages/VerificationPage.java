@@ -6,12 +6,25 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.$;
 
 public class VerificationPage {
-    private SelenideElement codeField = $("[data-test-id=code] input");
-    private SelenideElement verifyButton = $("[data-test-id=action-verify]");
+    private SelenideElement codeField = $("input[name='code']");
+    private SelenideElement verifyButton = $("button");
 
-    public DashboardPage validVerify(String verificationCode) {
-        codeField.setValue(verificationCode);
+    public void verify(String code) {
+        codeField.setValue(code);
         verifyButton.click();
+    }
+
+    public DashboardPage validVerify(String code) {
+        verify(code);
         return new DashboardPage();
+    }
+
+    public boolean isErrorVisible() {
+        return $("[data-test-id='error-notification']").isDisplayed();
+    }
+
+    public void shouldBeLoaded() {
+        codeField.shouldBe(visible);
+        verifyButton.shouldBe(visible);
     }
 }
