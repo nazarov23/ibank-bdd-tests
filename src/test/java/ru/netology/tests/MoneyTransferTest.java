@@ -3,59 +3,84 @@ package ru.netology.tests;
 import com.codeborne.selenide.Configuration;
 import org.junit.jupiter.api.*;
 import ru.netology.data.DataHelper;
-import ru.netology.pages.*;
+import ru.netology.pages.DashboardPage;
+import ru.netology.pages.LoginPage;
 
 import static com.codeborne.selenide.Selenide.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class MoneyTransferTest {
-    private DataHelper.UserInfo validUser;
-    private DataHelper.CardInfo firstCard;
-    private DataHelper.CardInfo secondCard;
+class MoneyTransferTest {
+    private DashboardPage dashboardPage;
 
     @BeforeAll
-    static void setupAll() {
+    static void setUpAll() {
         Configuration.browser = "chrome";
-        Configuration.baseUrl = "http://localhost:9999";
-        Configuration.timeout = 10000;
+        Configuration.headless = true;
+        Configuration.timeout = 15000;
+        Configuration.browserSize = "1920x1080";
     }
 
     @BeforeEach
     void setup() {
-        validUser = DataHelper.getValidUser();
-        firstCard = DataHelper.getFirstCard();
-        secondCard = DataHelper.getSecondCard();
+        // Очистить cookies и localStorage
+        clearBrowserCookies();
+        clearBrowserLocalStorage();
 
-        open("/");
+        // Открыть страницу логина
+        open("http://localhost:9999");
 
-        new LoginPage()
-                .validLogin(validUser)
-                .validVerify(validUser)
-                .shouldBeVisible();
+        // Выполнить логин и верификацию
+        DataHelper.AuthInfo authInfo = DataHelper.getAuthInfo();
+        LoginPage loginPage = new LoginPage();
+        dashboardPage = loginPage.validLogin(authInfo)
+                .validVerify(DataHelper.getVerificationCode());
+
+        // Проверить, что Dashboard виден
+        dashboardPage.shouldBeVisible();
+    }
+
+    @Test
+    @DisplayName("Успешный перевод средств с карты 2 на карту 1")
+    void shouldTransferMoneyFromSecondToFirstCard() {
+        // Получить начальные балансы
+        int firstCardInitialBalance = dashboardPage.getFirstCardBalance();
+        int secondCardInitialBalance = dashboardPage.getSecondCardBalance();
+
+        // Выполнить перевод
+        int transferAmount = 500;
+        dashboardPage.transferToFirstCard()
+                .makeTransfer(String.valueOf(transferAmount), DataHelper.getSecondCardInfo());
+
+        // Проверить обновленные балансы
+        int firstCardFinalBalance = dashboardPage.getFirstCardBalance();
+        int secondCardFinalBalance = dashboardPage.getSecondCardBalance();
+
+        assertEquals(firstCardInitialBalance + transferAmount, firstCardFinalBalance);
+        assertEquals(secondCardInitialBalance - transferAmount, secondCardFinalBalance);
+    }
+
+    @Test
+    @DisplayName("Успешный перевод средств с карты 1 на карту 2")
+    void shouldTransferMoneyFromFirstToSecondCard() {
+        // Получить начальные балансы
+        int firstCardInitialBalance = dashboardPage.getFirstCardBalance();
+        int secondCardInitialBalance = dashboardPage.getSecondCardBalance();
+
+        // Выполнить перевод
+        int transferAmount = 300;
+        dashboardPage.transferToSecondCard()
+                .makeTransfer(String.valueOf(transferAmount), DataHelper.getFirstCardInfo());
+
+        // Проверить обновленные балансы
+        int firstCardFinalBalance = dashboardPage.getFirstCardBalance();
+        int secondCardFinalBalance = dashboardPage.getSecondCardBalance();
+
+        assertEquals(firstCardInitialBalance - transferAmount, firstCardFinalBalance);
+        assertEquals(secondCardInitialBalance + transferAmount, secondCardFinalBalance);
     }
 
     @AfterEach
     void tearDown() {
         closeWebDriver();
-    }
-
-    @Test
-    @DisplayName("Успешный перевод средств с карты 2 на карту 1")
-    void shouldTransferMoneyBetweenCards() {
-        DashboardPage dashboard = new DashboardPage();
-
-        int initialBalanceCard1 = dashboard.getCardBalance(firstCard);
-        int initialBalanceCard2 = dashboard.getCardBalance(secondCard);
-        String transferAmount = "1000";
-
-        dashboard.selectCardToReplenish(firstCard)
-                .makeValidTransfer(transferAmount, secondCard)
-                .shouldBeVisible();
-
-        int finalBalanceCard1 = dashboard.getCardBalance(firstCard);
-        int finalBalanceCard2 = dashboard.getCardBalance(secondCard);
-
-        assertEquals(initialBalanceCard1 + Integer.parseInt(transferAmount), finalBalanceCard1);
-        assertEquals(initialBalanceCard2 - Integer.parseInt(transferAmount), finalBalanceCard2);
     }
 }
