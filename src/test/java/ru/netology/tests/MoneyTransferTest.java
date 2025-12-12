@@ -1,95 +1,61 @@
 package ru.netology.tests;
 
 import com.codeborne.selenide.Configuration;
-import com.codeborne.selenide.Selenide;
 import org.junit.jupiter.api.*;
+import ru.netology.data.DataHelper;
 import ru.netology.pages.*;
 
-import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selenide.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MoneyTransferTest {
+    private DataHelper.UserInfo validUser;
+    private DataHelper.CardInfo firstCard;
+    private DataHelper.CardInfo secondCard;
 
     @BeforeAll
     static void setupAll() {
-        // НАСТРАИВАЕМ SELENIDE с нашими опциями Chrome
+        Configuration.browser = "chrome";
         Configuration.baseUrl = "http://localhost:9999";
+        Configuration.timeout = 10000;
     }
 
     @BeforeEach
     void setup() {
-        // Очищаем куки перед каждым тестом
-        Selenide.clearBrowserCookies();
-        Selenide.clearBrowserLocalStorage();
+        validUser = DataHelper.getValidUser();
+        firstCard = DataHelper.getFirstCard();
+        secondCard = DataHelper.getSecondCard();
 
-        // Открываем страницу
         open("/");
 
-        // Ждём загрузки (явно)
-        $("[data-test-id='login']").shouldBe(visible, java.time.Duration.ofSeconds(10));
-
-        // Логин
-        $("[data-test-id='login'] input").setValue("vasya");
-        $("input[type='password']").setValue("qwerty123");
-        $("button").click();
-
-        // Верификация
-        $("input[name='code']").shouldBe(visible, java.time.Duration.ofSeconds(10));
-        $("input[name='code']").setValue("12345");
-        $("button").click();
-
-        // Проверка дашборда
-        $("[data-test-id='dashboard']").shouldBe(visible, java.time.Duration.ofSeconds(10));
+        new LoginPage()
+                .validLogin(validUser)
+                .validVerify(validUser)
+                .shouldBeVisible();
     }
 
     @AfterEach
     void tearDown() {
-        Selenide.closeWebDriver();
+        closeWebDriver();
     }
 
     @Test
-    void simpleTestToCheckLogin() {
-        // Просто проверяем, что логин прошёл
-        assertTrue($("[data-test-id='dashboard']").exists(),
-                "Дашборд должен отображаться после логина");
+    @DisplayName("Успешный перевод средств с карты 2 на карту 1")
+    void shouldTransferMoneyBetweenCards() {
+        DashboardPage dashboard = new DashboardPage();
 
-        // Проверяем наличие карт
-        String pageText = $("body").getText();
-        assertTrue(pageText.contains("0001"), "Должна быть карта 0001");
-        assertTrue(pageText.contains("0002"), "Должна быть карта 0002");
-    }
+        int initialBalanceCard1 = dashboard.getCardBalance(firstCard);
+        int initialBalanceCard2 = dashboard.getCardBalance(secondCard);
+        String transferAmount = "1000";
 
-    @Test
-    void shouldTransferMoneyFromSecondToFirstCard() {
-        // Находим карту по тексту и нажимаем "Пополнить"
-        $$("div").findBy(text("0001"))
-                .$("button").click();
+        dashboard.selectCardToReplenish(firstCard)
+                .makeValidTransfer(transferAmount, secondCard)
+                .shouldBeVisible();
 
-        // Ждём форму перевода
-        $("[data-test-id='amount'] input").shouldBe(visible);
+        int finalBalanceCard1 = dashboard.getCardBalance(firstCard);
+        int finalBalanceCard2 = dashboard.getCardBalance(secondCard);
 
-        // Заполняем форму
-        $("[data-test-id='amount'] input").setValue("1000");
-        $("[data-test-id='from'] input").setValue("5559 0000 0000 0002");
-        $("[data-test-id='action-transfer']").click();
-
-        // Проверяем успех
-        $("[data-test-id='dashboard']").shouldBe(visible);
-    }
-
-    @Test
-    void shouldNotTransferZeroAmount() {
-        $$("div").findBy(text("0001"))
-                .$("button").click();
-
-        $("[data-test-id='amount'] input").shouldBe(visible).setValue("0");
-        $("[data-test-id='from'] input").setValue("5559 0000 0000 0002");
-        $("[data-test-id='action-transfer']").click();
-
-        // Должны остаться на форме
-        assertTrue($("[data-test-id='amount']").exists() ||
-                        $("[data-test-id='error-notification']").exists(),
-                "При нулевой сумме должна быть ошибка");
+        assertEquals(initialBalanceCard1 + Integer.parseInt(transferAmount), finalBalanceCard1);
+        assertEquals(initialBalanceCard2 - Integer.parseInt(transferAmount), finalBalanceCard2);
     }
 }

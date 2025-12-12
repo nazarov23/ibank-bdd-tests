@@ -12,7 +12,6 @@ public class DashboardPage {
     private final SelenideElement dashboard = $("[data-test-id='dashboard']");
 
     public TransferPage selectCardToReplenish(DataHelper.CardInfo card) {
-        // Используем text() вместо byText()
         cards.findBy(text("**** **** **** " + card.getLastFourDigits()))
                 .$("button").click();
         return new TransferPage();
