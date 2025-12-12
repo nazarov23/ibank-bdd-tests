@@ -15,8 +15,8 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Start SUT
-        # Ваш JAR файл называется app-ibank-build-for-testers.jar
+        # ВАШ JAR файл
         run: java -jar ./artifacts/app-ibank-build-for-testers.jar &
       - name: Build with Gradle
-        # Добавлен headless режим
+        # Добавляем headless как в комментарии образца
         run: ./gradlew test --info -Dselenide.headless=true
