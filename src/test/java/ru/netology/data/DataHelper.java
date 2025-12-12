@@ -1,12 +1,56 @@
 package ru.netology.data;
 
-import lombok.Value;
-
 public class DataHelper {
 
-    private DataHelper() {}
+    private DataHelper() {
+        // Приватный конструктор для утильного класса
+    }
 
-    // 1. Данные пользователя
+    // 1. Модель пользователя
+    public static class UserInfo {
+        private final String login;
+        private final String password;
+        private final String verificationCode;
+
+        public UserInfo(String login, String password, String verificationCode) {
+            this.login = login;
+            this.password = password;
+            this.verificationCode = verificationCode;
+        }
+
+        public String getLogin() {
+            return login;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public String getVerificationCode() {
+            return verificationCode;
+        }
+    }
+
+    // 2. Модель карты
+    public static class CardInfo {
+        private final String cardNumber;
+        private final String lastFourDigits;
+
+        public CardInfo(String cardNumber, String lastFourDigits) {
+            this.cardNumber = cardNumber;
+            this.lastFourDigits = lastFourDigits;
+        }
+
+        public String getCardNumber() {
+            return cardNumber;
+        }
+
+        public String getLastFourDigits() {
+            return lastFourDigits;
+        }
+    }
+
+    // 3. Получение тестовых данных пользователя
     public static UserInfo getValidUser() {
         return new UserInfo("vasya", "qwerty123", "12345");
     }
@@ -15,13 +59,7 @@ public class DataHelper {
         return new UserInfo("invalid", "invalid", "00000");
     }
 
-    // 2. Данные карт
-    @Value
-    public static class CardInfo {
-        String cardNumber;
-        String lastFourDigits;
-    }
-
+    // 4. Получение тестовых данных карт
     public static CardInfo getFirstCard() {
         return new CardInfo("5559 0000 0000 0001", "0001");
     }
@@ -30,13 +68,15 @@ public class DataHelper {
         return new CardInfo("5559 0000 0000 0002", "0002");
     }
 
-    // 3. Суммы для переводов
+    // 5. Методы для генерации сумм
     public static String getValidAmount(int baseBalance) {
-        return String.valueOf(baseBalance / 2); // 50% от баланса
+        // Переводим 50% от баланса
+        return String.valueOf(baseBalance / 2);
     }
 
     public static String getExcessiveAmount(int baseBalance) {
-        return String.valueOf(baseBalance + 1000); // На 1000 больше баланса
+        // Сумма больше баланса на 1000
+        return String.valueOf(baseBalance + 1000);
     }
 
     public static String getZeroAmount() {
@@ -47,7 +87,11 @@ public class DataHelper {
         return "-100";
     }
 
-    // 4. Ошибки (ожидаемые сообщения)
+    public static String getSmallAmount() {
+        return "1"; // Минимальная сумма
+    }
+
+    // 6. Ожидаемые сообщения об ошибках
     public static String getInsufficientFundsError() {
         return "Недостаточно средств";
     }
@@ -58,5 +102,13 @@ public class DataHelper {
 
     public static String getSameCardError() {
         return "Нельзя перевести на ту же карту";
+    }
+
+    public static String getInvalidAmountError() {
+        return "Неверно указана сумма";
+    }
+
+    public static String getEmptyFieldError() {
+        return "Поле обязательно для заполнения";
     }
 }
