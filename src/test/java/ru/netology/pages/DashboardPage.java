@@ -2,8 +2,9 @@ package ru.netology.pages;
 
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
-import ru.netology.data.DataHelper.CardInfo;
+import ru.netology.data.DataHelper;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 
@@ -11,14 +12,14 @@ public class DashboardPage {
     private final ElementsCollection cards = $$(".list__item");
     private final SelenideElement dashboard = $("[data-test-id='dashboard']");
 
-    public TransferPage selectCardToReplenish(CardInfo card) {
-        cards.findBy(text("**** **** **** " + card.getLastFourDigits()))
+    public TransferPage selectCardToReplenish(DataHelper.CardInfo card) {
+        cards.findBy(byText("**** **** **** " + card.getLastFourDigits()))
                 .$("button").click();
         return new TransferPage();
     }
 
-    public int getCardBalance(CardInfo card) {
-        String cardText = cards.findBy(text("**** **** **** " + card.getLastFourDigits()))
+    public int getCardBalance(DataHelper.CardInfo card) {
+        String cardText = cards.findBy(byText("**** **** **** " + card.getLastFourDigits()))
                 .getText();
         return extractBalance(cardText);
     }

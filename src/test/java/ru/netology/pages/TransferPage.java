@@ -1,7 +1,7 @@
 package ru.netology.pages;
 
 import com.codeborne.selenide.SelenideElement;
-import ru.netology.data.DataHelper.CardInfo;
+import ru.netology.data.DataHelper;
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selenide.$;
 
@@ -12,13 +12,13 @@ public class TransferPage {
     private final SelenideElement errorNotification = $("[data-test-id='error-notification']");
     private final SelenideElement cancelButton = $("[data-test-id='action-cancel']");
 
-    public DashboardPage makeValidTransfer(String amount, CardInfo fromCard) {
+    public DashboardPage makeValidTransfer(String amount, DataHelper.CardInfo fromCard) {
         fillTransferForm(amount, fromCard);
         transferButton.click();
         return new DashboardPage();
     }
 
-    public TransferPage makeInvalidTransfer(String amount, CardInfo fromCard) {
+    public TransferPage makeInvalidTransfer(String amount, DataHelper.CardInfo fromCard) {
         fillTransferForm(amount, fromCard);
         transferButton.click();
         return this;
@@ -29,7 +29,7 @@ public class TransferPage {
         return new DashboardPage();
     }
 
-    private void fillTransferForm(String amount, CardInfo fromCard) {
+    private void fillTransferForm(String amount, DataHelper.CardInfo fromCard) {
         amountField.setValue(amount);
         fromField.setValue(fromCard.getCardNumber());
     }
