@@ -20,33 +20,56 @@ class MoneyTransferTest {
 
     @BeforeAll
     static void setUpAll() {
+        // Создаем и настраиваем ChromeOptions
         ChromeOptions options = new ChromeOptions();
+
+        // 1. Отключаем все всплывающие окна и предупреждения
         Map<String, Object> prefs = new HashMap<>();
-        prefs.put("credentials_enable_service", false);
-        prefs.put("profile.password_manager_enabled", false);
-        prefs.put("profile.password_manager_leak_detection", false);
+        prefs.put("credentials_enable_service", false);           // Отключаем службу учетных данных
+        prefs.put("profile.password_manager_enabled", false);     // Отключаем менеджер паролей
+        prefs.put("profile.password_manager_leak_detection", false); // Отключаем проверку утечек паролей
+
+        // 2. Отключаем уведомления
         prefs.put("profile.default_content_setting_values.notifications", 2);
+
+        // 3. Отключаем предупреждения о сохранении пароля
         prefs.put("profile.default_content_settings.popups", 0);
+        prefs.put("profile.password_manager_enabled", false);
+
+        // 4. Отключаем предупреждения о небезопасном контенте для localhost
         prefs.put("profile.managed_default_content_settings.images", 1);
         prefs.put("profile.managed_default_content_settings.stylesheets", 1);
 
         options.setExperimentalOption("prefs", prefs);
-        options.addArguments("--disable-infobars");
-        options.addArguments("--disable-notifications");
-        options.addArguments("--disable-popup-blocking");
-        options.addArguments("--disable-save-password-bubble");
-        options.addArguments("--no-sandbox");
-        options.addArguments("--disable-dev-shm-usage");
-        options.addArguments("--window-size=1920,1080");
 
+        // 5. Добавляем дополнительные аргументы для отключения всплывающих окон
+        options.addArguments("--disable-infobars");                // Отключаем инфо-панель Chrome
+        options.addArguments("--disable-notifications");           // Отключаем уведомления
+        options.addArguments("--disable-popup-blocking");          // Отключаем блокировку всплывающих окон
+        options.addArguments("--disable-save-password-bubble");    // Отключаем окно сохранения пароля
+        options.addArguments("--disable-password-manager-reauthentication"); // Отключаем повторную аутентификацию
+        options.addArguments("--password-store=basic");            // Упрощаем хранение паролей
+        options.addArguments("--disable-features=PasswordLeakDetection"); // Отключаем проверку утечек
+        options.addArguments("--disable-dev-shm-usage");           // Для Docker/CI совместимости
+        options.addArguments("--no-sandbox");                      // Отключаем песочницу (для CI)
+        options.addArguments("--disable-gpu");                     // Отключаем GPU (для CI)
+        options.addArguments("--window-size=1920,1080");           // Устанавливаем размер окна
+        options.addArguments("--ignore-certificate-errors");       // Игнорируем ошибки сертификатов
+        options.addArguments("--disable-extensions");              // Отключаем расширения
+
+        // 6. Отключаем автоматическое сохранение паролей
+        options.addArguments("--enable-automation");
+        options.addArguments("--disable-blink-features=AutomationControlled");
+
+        // 7. Передаем настроенные опции в Selenide
         Configuration.browserCapabilities = options;
-        Configuration.browser = "chrome";
-        Configuration.headless = false;
 
-        // ✅ КРИТИЧЕСКОЕ ИЗМЕНЕНИЕ: Увеличиваем таймауты для CI
-        Configuration.timeout = 30000;           // 30 секунд вместо 15
-        Configuration.pageLoadTimeout = 60000;   // 60 секунд на загрузку страницы
+        // 8. Основные настройки Selenide
+        Configuration.browser = "chrome";
+        Configuration.headless = false; // Временно false для отладки. Для CI поменяйте на true
+        Configuration.timeout = 15000;
         Configuration.browserSize = "1920x1080";
+        Configuration.pageLoadStrategy = "normal";
         Configuration.screenshots = true;
         Configuration.savePageSource = false;
     }
@@ -56,29 +79,15 @@ class MoneyTransferTest {
         try {
             System.out.println("=== Начало настройки теста ===");
 
-            // ✅ Дополнительная пауза для гарантии запуска приложения
-            System.out.println("Ожидание полного запуска приложения...");
-            try {
-                Thread.sleep(5000); // 5 секунд на полный запуск
-            } catch (InterruptedException e) {
-                // Игнорируем
-            }
-
             // Открываем страницу
             open("http://localhost:9999");
 
-            // ✅ Пауза после открытия страницы
-            sleep(2000);
-
+            // Проверяем, что страница загрузилась
             System.out.println("Текущий URL: " + WebDriverRunner.url());
 
-            // Проверяем, что страница вообще загрузилась
-            $("body").shouldBe(visible, Duration.ofSeconds(10));
-
-            // Ждём появления элементов логина с увеличенным таймаутом
-            System.out.println("Ожидание элементов логина...");
-            $("[data-test-id='login'] input").shouldBe(visible, Duration.ofSeconds(15));
-            $("[data-test-id='password'] input").shouldBe(visible, Duration.ofSeconds(15));
+            // Ждем появления элементов логина
+            $("[data-test-id='login'] input").shouldBe(visible);
+            $("[data-test-id='password'] input").shouldBe(visible);
 
             System.out.println("Страница логина загружена");
 
@@ -92,15 +101,13 @@ class MoneyTransferTest {
 
             System.out.println("Верификация завершена");
 
-            // ✅ Увеличенная пауза для загрузки Dashboard
-            System.out.println("Ожидание загрузки Dashboard...");
-            sleep(5000);
+            // Пауза для загрузки Dashboard
+            sleep(2000);
 
             // Проверяем URL после логина
             System.out.println("URL после логина: " + WebDriverRunner.url());
 
-            // Проверяем, что Dashboard виден с увеличенным таймаутом
-            System.out.println("Проверка видимости Dashboard...");
+            // Проверяем, что Dashboard виден
             dashboardPage.shouldBeVisible();
 
             System.out.println("=== Настройка теста завершена успешно ===");
@@ -142,7 +149,7 @@ class MoneyTransferTest {
                     .makeTransfer(String.valueOf(transferAmount), DataHelper.getSecondCardInfo());
 
             System.out.println("Перевод выполнен, ожидание обновления балансов...");
-            sleep(3000);
+            sleep(2000);
 
             // Проверяем обновленные балансы
             int firstCardFinalBalance = dashboardPage.getFirstCardBalance();
@@ -186,7 +193,7 @@ class MoneyTransferTest {
                     .makeTransfer(String.valueOf(transferAmount), DataHelper.getFirstCardInfo());
 
             System.out.println("Перевод выполнен, ожидание обновления балансов...");
-            sleep(3000);
+            sleep(2000);
 
             // Проверяем обновленные балансы
             int firstCardFinalBalance = dashboardPage.getFirstCardBalance();
