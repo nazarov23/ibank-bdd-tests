@@ -1,30 +1,16 @@
 package ru.netology.pages;
 
 import com.codeborne.selenide.SelenideElement;
-
-import static com.codeborne.selenide.Condition.visible;
+import ru.netology.data.UserInfo;
 import static com.codeborne.selenide.Selenide.$;
 
 public class VerificationPage {
-    private SelenideElement codeField = $("input[name='code']");
-    private SelenideElement verifyButton = $("button");
+    private final SelenideElement codeField = $("[data-test-id='code'] input");
+    private final SelenideElement verifyButton = $("[data-test-id='action-verify']");
 
-    public void verify(String code) {
-        codeField.setValue(code);
+    public DashboardPage validVerify(UserInfo user) {
+        codeField.setValue(user.getVerificationCode());
         verifyButton.click();
-    }
-
-    public DashboardPage validVerify(String code) {
-        verify(code);
         return new DashboardPage();
-    }
-
-    public boolean isErrorVisible() {
-        return $("[data-test-id='error-notification']").isDisplayed();
-    }
-
-    public void shouldBeLoaded() {
-        codeField.shouldBe(visible);
-        verifyButton.shouldBe(visible);
     }
 }

@@ -14,18 +14,7 @@ public class MoneyTransferTest {
     @BeforeAll
     static void setupAll() {
         // НАСТРАИВАЕМ SELENIDE с нашими опциями Chrome
-        Configuration.browser = "chrome";
-        Configuration.timeout = 20000;
         Configuration.baseUrl = "http://localhost:9999";
-        Configuration.headless = false; // ОБЯЗАТЕЛЬНО false для отладки
-
-        // КЛЮЧЕВАЯ СТРОКА: применяем настройки Chrome
-        Configuration.browserCapabilities = ChromeSettings.getChromeOptions();
-
-        // Дополнительные настройки Selenide
-        Configuration.browserSize = "1920x1080";
-        Configuration.screenshots = true;
-        Configuration.savePageSource = false;
     }
 
     @BeforeEach

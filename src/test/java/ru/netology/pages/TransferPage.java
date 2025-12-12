@@ -1,28 +1,27 @@
 package ru.netology.pages;
 
-import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.SelenideElement;
-
+import ru.netology.data.DataHelper.CardInfo;
+import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selenide.$;
-import static com.codeborne.selenide.Selenide.$$;
 
 public class TransferPage {
-    private SelenideElement amountField = $("[data-test-id='amount'] input");
-    private SelenideElement fromField = $("[data-test-id='from'] input");
-    private SelenideElement transferButton = $("[data-test-id='action-transfer']");
-    private SelenideElement cancelButton = $("[data-test-id='action-cancel']");
+    private final SelenideElement amountField = $("[data-test-id='amount'] input");
+    private final SelenideElement fromField = $("[data-test-id='from'] input");
+    private final SelenideElement transferButton = $("[data-test-id='action-transfer']");
+    private final SelenideElement errorNotification = $("[data-test-id='error-notification']");
+    private final SelenideElement cancelButton = $("[data-test-id='action-cancel']");
 
-    public DashboardPage makeTransfer(String fromCardNumber, int amount) {
-        enterAmount(amount);
-        enterFromCard(fromCardNumber);
+    public DashboardPage makeValidTransfer(String amount, CardInfo fromCard) {
+        fillTransferForm(amount, fromCard);
         transferButton.click();
         return new DashboardPage();
     }
 
-    public void attemptTransfer(String fromCardNumber, int amount) {
-        enterAmount(amount);
-        enterFromCard(fromCardNumber);
+    public TransferPage makeInvalidTransfer(String amount, CardInfo fromCard) {
+        fillTransferForm(amount, fromCard);
         transferButton.click();
+        return this;
     }
 
     public DashboardPage cancelTransfer() {
@@ -30,22 +29,17 @@ public class TransferPage {
         return new DashboardPage();
     }
 
-    public boolean isErrorVisible() {
-        return $$("[data-test-id='error-notification'], .notification_error, .error-message")
-                .filterBy(Condition.visible).size() > 0;
+    private void fillTransferForm(String amount, CardInfo fromCard) {
+        amountField.setValue(amount);
+        fromField.setValue(fromCard.getCardNumber());
     }
 
-    public boolean isOnPage() {
-        return amountField.isDisplayed() && transferButton.isDisplayed();
+    public void shouldHaveError(String expectedError) {
+        errorNotification.shouldBe(visible)
+                .shouldHave(text(expectedError));
     }
 
-    private void enterAmount(int amount) {
-        amountField.clear();
-        amountField.setValue(String.valueOf(amount));
-    }
-
-    private void enterFromCard(String cardNumber) {
-        fromField.clear();
-        fromField.setValue(cardNumber);
+    public void shouldBeVisible() {
+        amountField.shouldBe(visible);
     }
 }
