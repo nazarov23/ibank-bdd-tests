@@ -1,52 +1,36 @@
 package ru.netology.pages;
 
+import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
+import ru.netology.data.DataHelper;
 
-import static com.codeborne.selenide.Condition.visible;
-import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Condition.*;
+import static com.codeborne.selenide.Selenide.*;
 
 public class DashboardPage {
-    private final SelenideElement heading = $("[data-test-id='dashboard']");
 
-    public void shouldBeVisible() {
-        heading.shouldBe(visible);
+    private SelenideElement heading = $("h1");
+    private ElementsCollection cards = $$(".list__item");
+
+    public DashboardPage() {
+        heading.shouldBe(visible).shouldHave(text("Ваши карты"));
     }
 
-    public int getCardBalance(String cardId) {
-        SelenideElement card = $("[data-test-id='" + cardId + "']");
-        String text = card.getText();
+    public int getCardBalance(DataHelper.CardInfo cardInfo) {
+        var card = $("[data-test-id='" + cardInfo.getTestId() + "']");
+        var text = card.getText();
         return extractBalance(text);
     }
 
-    public int getFirstCardBalance() {
-        return getCardBalance("92df3f1c-a033-48e6-8390-206f6b1f56c0");
-    }
-
-    public int getSecondCardBalance() {
-        return getCardBalance("0f3f5c2a-249e-4c3d-8287-09f7a039391d");
-    }
-
     private int extractBalance(String text) {
-        String balanceStart = "баланс: ";
-        String balanceFinish = " р.";
-
-        int start = text.indexOf(balanceStart);
-        int finish = text.indexOf(balanceFinish);
-
-        String value = text.substring(start + balanceStart.length(), finish).trim();
+        var start = text.indexOf("баланс: ");
+        var end = text.indexOf(" р.");
+        var value = text.substring(start + 8, end).trim();
         return Integer.parseInt(value);
     }
 
-    public TransferPage transferTo(String cardId) {
-        $("[data-test-id='" + cardId + "'] [data-test-id='action-deposit']").click();
+    public TransferPage selectCardToTransfer(DataHelper.CardInfo cardInfo) {
+        $("[data-test-id='" + cardInfo.getTestId() + "'] [data-test-id=action-deposit]").click();
         return new TransferPage();
-    }
-
-    public TransferPage transferToFirstCard() {
-        return transferTo("92df3f1c-a033-48e6-8390-206f6b1f56c0");
-    }
-
-    public TransferPage transferToSecondCard() {
-        return transferTo("0f3f5c2a-249e-4c3d-8287-09f7a039391d");
     }
 }
