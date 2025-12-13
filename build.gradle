@@ -38,8 +38,13 @@ dependencies {
 
 test {
     useJUnitPlatform()
-    systemProperty 'selenide.headless', System.getProperty('selenide.headless', 'true')
-    systemProperty 'chromeoptions.prefs', '{"intl.accept_languages":"en,en_US"}'
+    // Все системные свойства для Selenide в одном месте
+    systemProperties = [
+            'selenide.headless': System.getProperty('selenide.headless', 'true'),
+            'chromeoptions.prefs': '{"intl.accept_languages":"en,en_US"}',
+            'selenide.baseUrl': System.getProperty('selenide.baseUrl', 'http://localhost:9999'),
+            'selenide.browser': 'chrome'
+    ]
 }
 
 // Указываем кодировку UTF-8 для компиляции Java и Groovy файлов
