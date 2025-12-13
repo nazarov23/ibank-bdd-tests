@@ -16,24 +16,26 @@ jobs:
       - name: Validate Gradle wrapper
         uses: gradle/wrapper-validation-action@v1
 
-      # КРИТИЧЕСКИ ВАЖНЫЙ ШАГ: установка системных зависимостей для Chrome
+      # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: правильные имена пакетов для Ubuntu 24.04
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget unzip libgconf-2-4 libnss3 libxss1 libappindicator3-1 libasound2 libatk-bridge2.0-0 libgtk-3-0 xvfb
+          sudo apt-get install -y wget unzip libnss3 libxss1 libasound2t64 libatk-bridge2.0-0 libgtk-3-0 xvfb
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # Запуск вашего приложения
       - name: Start SUT
         run: java -jar ./artifacts/app-ibank-build-for-testers.jar &
 
-      # КРИТИЧЕСКИ ВАЖНЫЙ ШАГ: запуск тестов через виртуальный дисплей xvfb
+      # Даем приложению время запуститься
+      - name: Wait for app to start
+        run: sleep 10
+
       - name: Run tests with Gradle
         run: xvfb-run -a ./gradlew test --info
 
-      # Генерация Allure-отчета
+      # Генерация Allure-отчета (убрана несуществующая опция allure_version)
       - name: Generate Allure Report
         if: always()
         uses: simple-elf/allure-report-action@master
@@ -42,9 +44,8 @@ jobs:
           allure_results: build/allure-results
           allure_report: allure-report
           allure_history: allure-history
-          allure_version: '2.23.0'
 
-      # Публикация отчета в ветку gh-pages
+      # Публикация отчета (важно: нужен токен с правами записи)
       - name: Deploy Allure Report
         uses: peaceiris/actions-gh-pages@v3
         if: always()
