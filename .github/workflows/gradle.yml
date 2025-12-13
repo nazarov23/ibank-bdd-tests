@@ -16,15 +16,24 @@ jobs:
       - name: Validate Gradle wrapper
         uses: gradle/wrapper-validation-action@v1
 
-      # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: правильные имена пакетов для Ubuntu 24.04
-      - name: Install system dependencies
+      # КРИТИЧЕСКИ ВАЖНЫЙ ШАГ: установка Chrome и системных зависимостей
+      - name: Install Chrome and dependencies
         run: |
           sudo apt-get update
+          # Установка системных библиотек для Chrome
           sudo apt-get install -y wget unzip libnss3 libxss1 libasound2t64 libatk-bridge2.0-0 libgtk-3-0 xvfb
+          # Установка Google Chrome
+          wget -q -O- https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
+          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable
+          # Проверка версии Chrome
+          google-chrome --version
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      # Запуск вашего приложения
       - name: Start SUT
         run: java -jar ./artifacts/app-ibank-build-for-testers.jar &
 
@@ -32,10 +41,11 @@ jobs:
       - name: Wait for app to start
         run: sleep 10
 
+      # Запуск тестов через виртуальный дисплей
       - name: Run tests with Gradle
         run: xvfb-run -a ./gradlew test --info
 
-      # Генерация Allure-отчета (убрана несуществующая опция allure_version)
+      # Генерация Allure-отчета
       - name: Generate Allure Report
         if: always()
         uses: simple-elf/allure-report-action@master
@@ -45,7 +55,7 @@ jobs:
           allure_report: allure-report
           allure_history: allure-history
 
-      # Публикация отчета (важно: нужен токен с правами записи)
+      # Публикация отчета
       - name: Deploy Allure Report
         uses: peaceiris/actions-gh-pages@v3
         if: always()
