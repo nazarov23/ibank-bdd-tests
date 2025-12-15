@@ -15,44 +15,15 @@ repositories {
 }
 
 dependencies {
-    // JUnit 5
     testImplementation 'org.junit.jupiter:junit-jupiter:5.9.0'
-
-    // Selenium + Selenide
     testImplementation 'com.codeborne:selenide:6.19.1'
-
-    // WebDriverManager для автоматической установки драйверов
-    testImplementation 'io.github.bonigarcia:webdrivermanager:5.6.4'
-
-    // Allure для отчетов
-    testImplementation 'io.qameta.allure:allure-selenide:2.20.1'
-    testImplementation 'io.qameta.allure:allure-junit5:2.20.1'
-
-    // Другие библиотеки (если используются)
     testImplementation 'com.google.code.gson:gson:2.10.1'
     testImplementation 'io.rest-assured:rest-assured:5.5.0'
     testImplementation 'com.github.javafaker:javafaker:1.0.2'
-
-    // Для устранения предупреждений SLF4J
-    testImplementation 'org.slf4j:slf4j-simple:2.0.9'
 }
 
 test {
     useJUnitPlatform()
-
-    // Настройки Selenide
-    systemProperty 'selenide.headless', System.getProperty('selenide.headless', 'true')
-    systemProperty 'selenide.baseUrl', System.getProperty('selenide.baseUrl', 'http://localhost:9999')
-    systemProperty 'selenide.browser', System.getProperty('selenide.browser', 'chrome')
-    systemProperty 'selenide.timeout', '15000'
-
-    // Настройки для русского языка в Chrome
-    systemProperty 'chromeoptions.prefs', '{"intl.accept_languages":"ru,ru_RU"}'
-
-    // Логирование тестов
-    testLogging {
-        events "passed", "skipped", "failed"
-        exceptionFormat "full"
-        showStandardStreams = true
-    }
+    // Headless включаем через свойство selenide.headless
+    systemProperty 'selenide.headless', System.getProperty('selenide.headless')
 }
