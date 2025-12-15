@@ -1,60 +1,30 @@
 plugins {
     id 'java'
-    id 'io.qameta.allure' version '2.11.2'
+    id 'io.freefair.lombok' version '8.6'
 }
 
-group 'ru.netology'
-version '1.0-SNAPSHOT'
+group = 'ru.netology'
+version = '1.0-SNAPSHOT'
 
 sourceCompatibility = 11
+compileJava.options.encoding = 'UTF-8'
+compileTestJava.options.encoding = 'UTF-8'
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3'
-    testImplementation 'com.codeborne:selenide:6.19.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.0'
+    testImplementation 'com.codeborne:selenide:6.19.1'
+    testImplementation 'com.google.code.gson:gson:2.10.1'
+    testImplementation 'io.rest-assured:rest-assured:5.5.0'
+    testImplementation 'com.github.javafaker:javafaker:1.0.2'
     testImplementation 'io.github.bonigarcia:webdrivermanager:5.6.4'
-    testImplementation 'io.qameta.allure:allure-selenide:2.20.1'
-    testImplementation 'io.qameta.allure:allure-junit5:2.20.1'
-
-    // Добавляем зависимость для CDP v143
-    testImplementation 'org.seleniumhq.selenium:selenium-devtools-v143:4.13.0'
-
-    // Дополнительные зависимости для работы с Selenium 4
-    testImplementation 'org.slf4j:slf4j-simple:2.0.9'
 }
 
 test {
     useJUnitPlatform()
     systemProperty 'selenide.headless', System.getProperty('selenide.headless', 'true')
     systemProperty 'selenide.baseUrl', System.getProperty('selenide.baseUrl', 'http://localhost:9999')
-    systemProperty 'selenide.browser', System.getProperty('selenide.browser', 'chrome')
-    systemProperty 'selenide.pageLoadTimeout', '30000'
-    systemProperty 'selenide.timeout', '15000'
-
-    // Убираем aspectjweaver, если он не нужен
-    // systemProperty 'junit.jupiter.extensions.autodetection.enabled', 'true'
-
-    // Настройки для Chrome
-    systemProperty 'chromeoptions.prefs', '{"intl.accept_languages":"ru,ru_RU"}'
-
-    // Увеличиваем время ожидания для более стабильной работы в CI
-    systemProperty 'selenide.timeout', '20000'
-
-    testLogging {
-        events "passed", "skipped", "failed"
-        exceptionFormat "full"
-        showStandardStreams = true
-    }
-}
-
-allure {
-    version = '2.20.1'
-    autoconfigure = true
-
-    useJUnit5 {
-        version = '2.20.1'
-    }
 }

@@ -3,77 +3,15 @@ name: Java CI with Gradle
 on: [push, pull_request]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v2
-
-      - name: Set up JDK 11
-        uses: actions/setup-java@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
           java-version: '11'
-          distribution: 'adopt'
-
-      - name: Установка Chrome
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wget unzip
-          wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-          sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'
-          sudo apt-get update
-          sudo apt-get install -y google-chrome-stable
-
-      - name: Проверка версии Chrome
-        run: google-chrome --version
-
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-
-      - name: Start SUT
-        # Запускаем банковское приложение
-        run: |
-          echo "Запуск банковского приложения..."
-          java -jar ./artifacts/app-ibank-build-for-testers.jar &
-          sleep 5  # Даем приложению время на запуск
-          echo "Проверяем доступность приложения..."
-          curl -s -o /dev/null -w "%{http_code}" http://localhost:9999 || true
-          echo ""
-
-      - name: Wait for SUT to be ready
-        run: |
-          for i in {1..30}; do
-            if curl -s http://localhost:9999 > /dev/null; then
-              echo "Приложение запущено и готово к работе"
-              break
-            fi
-            echo "Ожидание запуска приложения... попытка $i/30"
-            sleep 2
-          done
-
-      - name: Build with Gradle
-        # Запускаем автотесты
-        run: |
-          ./gradlew clean test --info \
-            -Dselenide.headless=true \
-            -Dselenide.browser=chrome \
-            -Dselenide.baseUrl=http://localhost:9999 \
-            -Dselenide.timeout=20000 \
-            -Dselenide.pageLoadTimeout=30000 \
-            -Dchromeoptions.prefs='{"intl.accept_languages":"ru,ru_RU"}'
-
-      - name: Upload test reports
-        if: always()
-        uses: actions/upload-artifact@v2
-        with:
-          name: test-reports
-          path: |
-            build/reports/tests/
-            build/test-results/
-
-      - name: Upload allure results
-        if: always()
-        uses: actions/upload-artifact@v2
-        with:
-          name: allure-results
-          path: build/allure-results/
+          distribution: 'temurin'
+      - run: chmod +x gradlew
+      - run: java -jar ./artifacts/app-ibank-build-for-testers.jar &
+      - run: sleep 10
+      - run: ./gradlew test --info
