@@ -5,34 +5,34 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           java-version: '11'
           distribution: 'temurin'
 
-      - name: Install Chrome
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: 'stable'
+
+      - name: Verify Chrome installation
         run: |
-          sudo apt-get update
-          sudo apt-get install -y wget unzip
-          wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-          sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
-          sudo apt-get update
-          sudo apt-get install -y google-chrome-stable
           google-chrome --version
+          which google-chrome
 
       - run: chmod +x gradlew
 
-      - name: Start SUT
+      - name: Start Application
         run: |
           java -jar ./artifacts/app-ibank-build-for-testers.jar &
           sleep 20
-          curl -f http://localhost:9999 || exit 1
+          curl -s -o /dev/null -w "%{http_code}\n" http://localhost:9999
 
       - name: Run Tests
         run: |
-          ./gradlew clean test \
-            -Dselenide.headless=true \
-            -Dselenide.baseUrl=http://localhost:9999 \
-            -Dselenide.timeout=20000
+          ./gradlew clean test

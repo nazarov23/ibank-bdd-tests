@@ -29,21 +29,24 @@ dependencies {
 test {
     useJUnitPlatform()
 
-    // Убираем проблемную настройку языка
+    // ВАЖНО: Убираем все настройки prefs для CI
     // systemProperty 'chromeoptions.prefs', 'intl.accept_languages=ru,ru_RU'
 
     systemProperty 'selenide.headless', System.getProperty('selenide.headless', 'true')
     systemProperty 'selenide.baseUrl', System.getProperty('selenide.baseUrl', 'http://localhost:9999')
     systemProperty 'selenide.browser', System.getProperty('selenide.browser', 'chrome')
-    systemProperty 'selenide.timeout', '15000'
 
-    // Дополнительные настройки для стабильности в CI
+    // Критические настройки для стабильности в CI
     systemProperty 'webdriver.chrome.whitelistedIps', ''
-    systemProperty 'webdriver.chrome.verboseLogging', 'true'
+    systemProperty 'webdriver.chrome.driver', '/usr/bin/chromedriver'
 
-    // Увеличиваем таймауты
-    systemProperty 'selenide.timeout', '20000'
-    systemProperty 'selenide.pageLoadTimeout', '30000'
+    // Увеличиваем все таймауты
+    systemProperty 'selenide.timeout', '30000'
+    systemProperty 'selenide.pageLoadTimeout', '60000'
+    systemProperty 'selenide.browserSize', '1920x1080'
+
+    // Дополнительные опции Chrome для CI
+    systemProperty 'chromeoptions.args', '--no-sandbox,--disable-dev-shm-usage,--disable-gpu,--headless,--window-size=1920,1080'
 
     testLogging {
         events "passed", "skipped", "failed"
