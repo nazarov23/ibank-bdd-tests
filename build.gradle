@@ -41,9 +41,11 @@ test {
     // Все системные свойства для Selenide в одном месте
     systemProperties = [
             'selenide.headless': System.getProperty('selenide.headless', 'true'),
-            'chromeoptions.prefs': '{"intl.accept_languages":"en,en_US"}',
+            'chromeoptions.prefs': '{"intl.accept_languages":"ru,ru_RU"}', // ИЗМЕНЕНО: русская локаль
             'selenide.baseUrl': System.getProperty('selenide.baseUrl', 'http://localhost:9999'),
-            'selenide.browser': 'chrome'
+            'selenide.browser': 'chrome',
+            'selenide.timeout': '15000', // Увеличенный таймаут для стабильности
+            'selenide.pageLoadTimeout': '30000'
     ]
 }
 
