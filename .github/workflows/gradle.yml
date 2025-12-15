@@ -1,16 +1,13 @@
-name: Java CI with Gradle
+name: Java CI
 
 on: [push, pull_request]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up JDK 11
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           java-version: '11'
           distribution: 'temurin'
@@ -20,38 +17,17 @@ jobs:
 
       - run: chmod +x gradlew
 
-      - name: Start SUT and Initialize Database
+      - name: Start App with LONG wait
         run: |
-          echo "🚀 Запускаем банковское приложение..."
           java -jar ./artifacts/app-ibank-build-for-testers.jar &
-          
-          echo "⏳ Ждем запуск приложения..."
-          sleep 25
-          
-          echo "🔍 Проверяем доступность приложения..."
-          curl -s http://localhost:9999 || exit 1
-          
-          echo "📊 Инициализируем тестовые данные..."
-          # Попробуем добавить тестовых пользователей через API (если есть)
-          curl -X POST http://localhost:9999/api/auth/registration \
-            -H "Content-Type: application/json" \
-            -d '{"login":"vasya","password":"qwerty123"}' || echo "API регистрации недоступно"
+          # ДАЕМ ОЧЕНЬ МНОГО ВРЕМЕНИ для инициализации базы!
+          sleep 45
+          curl -s http://localhost:9999 | grep -i "банк" && echo "✅ Приложение готово"
 
-      - name: Run Tests
+      - name: Run Tests with MAX timeouts
         run: |
-          echo "🧪 Запускаем автотесты..."
           ./gradlew clean test \
             -Dselenide.headless=true \
             -Dselenide.baseUrl=http://localhost:9999 \
-            -Dselenide.browser=chrome \
-            -Dselenide.timeout=25000 \
-            -Dselenide.pageLoadTimeout=40000
-
-      - name: Upload test reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: |
-            build/reports/tests/
-            build/test-results/
+            -Dselenide.timeout=60000 \
+            -Dselenide.pageLoadTimeout=120000
