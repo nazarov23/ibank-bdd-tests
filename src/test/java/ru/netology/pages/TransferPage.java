@@ -1,39 +1,27 @@
 package ru.netology.pages;
 
-import com.codeborne.selenide.SelenideElement;
-
 import static com.codeborne.selenide.Condition.*;
-import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.*;
 
 public class TransferPage {
 
-    private SelenideElement amountField = $("[data-test-id=amount] input");
-    private SelenideElement fromField = $("[data-test-id=from] input");
-    private SelenideElement transferButton = $("[data-test-id=action-transfer]");
-    private SelenideElement cancelButton = $("[data-test-id=action-cancel]");
-
     public TransferPage() {
-        $("h1").shouldBe(visible).shouldHave(text("Пополнение карты"));
-    }
-
-    public void makeTransfer(String amount, String fromCard) {
-        amountField.setValue(amount);
-        fromField.setValue(fromCard);
-        transferButton.click();
+        // Verify we're on transfer page
+        $("h1").shouldHave(text("Пополнение карты").or(text("Перевод")));
+        $("[data-test-id='amount']").shouldBe(visible);
+        $("[data-test-id='from']").shouldBe(visible);
     }
 
     public DashboardPage makeValidTransfer(String amount, String fromCard) {
-        makeTransfer(amount, fromCard);
+        $("[data-test-id='amount'] input").setValue(amount);
+        $("[data-test-id='from'] input").setValue(fromCard);
+        $("[data-test-id='action-transfer']").click();
+
         return new DashboardPage();
     }
 
     public DashboardPage cancelTransfer() {
-        cancelButton.click();
+        $("[data-test-id='action-cancel']").click();
         return new DashboardPage();
-    }
-
-    public boolean shouldShowError() {
-        $("[data-test-id=error-notification]").shouldBe(visible);
-        return $("[data-test-id=error-notification]").is(visible);
     }
 }

@@ -1,33 +1,83 @@
-name: Java CI
+name: Java CI with Gradle
 
 on: [push, pull_request]
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
         with:
           java-version: '11'
           distribution: 'temurin'
 
       - name: Setup Chrome
         uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: 'stable'
 
-      - run: chmod +x gradlew
-
-      - name: Start App with LONG wait
+      - name: Install system dependencies
         run: |
+          sudo apt-get update
+          sudo apt-get install -y wget curl
+          google-chrome --version
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Start Bank Application
+        run: |
+          echo "🚀 Starting bank application..."
           java -jar ./artifacts/app-ibank-build-for-testers.jar &
-          # ДАЕМ ОЧЕНЬ МНОГО ВРЕМЕНИ для инициализации базы!
-          sleep 45
-          curl -s http://localhost:9999 | grep -i "банк" && echo "✅ Приложение готово"
+          
+          echo "⏳ Waiting for application to start (30 seconds)..."
+          sleep 30
+          
+          echo "🔍 Checking application availability..."
+          for i in {1..10}; do
+            if curl -s -f http://localhost:9999 > /dev/null; then
+              echo "✅ Application is running!"
+              echo "Page content preview:"
+              curl -s http://localhost:9999 | grep -o '<title>.*</title>'
+              break
+            fi
+            echo "⏰ Waiting... attempt $i/10"
+            sleep 5
+          done
+          
+          # Final check
+          curl -s -f http://localhost:9999 || (echo "❌ Application failed to start"; exit 1)
 
-      - name: Run Tests with MAX timeouts
+      - name: Run Tests
         run: |
+          echo "🧪 Running tests..."
           ./gradlew clean test \
             -Dselenide.headless=true \
             -Dselenide.baseUrl=http://localhost:9999 \
-            -Dselenide.timeout=60000 \
-            -Dselenide.pageLoadTimeout=120000
+            -Dselenide.browser=chrome \
+            -Dselenide.timeout=30000 \
+            -Dselenide.pageLoadTimeout=60000 \
+            -Dselenide.browserSize=1920x1080 \
+            --info
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            build/reports/tests/
+            build/test-results/
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: build/reports/tests/*.png

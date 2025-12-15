@@ -1,36 +1,47 @@
 package ru.netology.pages;
 
-import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
-import ru.netology.data.DataHelper;
+import ru.netology.data.DataHelper.CardInfo;
 
 import static com.codeborne.selenide.Condition.*;
+import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.*;
 
 public class DashboardPage {
 
-    private SelenideElement heading = $("h1");
-    private ElementsCollection cards = $$(".list__item");
-
     public DashboardPage() {
-        heading.shouldBe(visible).shouldHave(text("Ваши карты"));
+        // Verify we're on dashboard
+        $("h1").shouldHave(text("Личный кабинет").or(text("Dashboard")));
+        $(byText("Ваши карты")).shouldBe(visible);
     }
 
-    public int getCardBalance(DataHelper.CardInfo cardInfo) {
-        var card = $("[data-test-id='" + cardInfo.getTestId() + "']");
-        var text = card.getText();
-        return extractBalance(text);
+    public int getCardBalance(CardInfo cardInfo) {
+        // Extract last 4 digits
+        String lastDigits = cardInfo.getCardNumber().substring(15);
+
+        // Find balance element
+        SelenideElement cardElement = $x("//*[contains(text(),'" + lastDigits + "')]/ancestor::div[contains(@class,'card')]");
+        String balanceText = cardElement.$("[class*='balance'], [class*='amount']").getText();
+
+        return extractBalance(balanceText);
+    }
+
+    public TransferPage selectCardToTransfer(CardInfo cardInfo) {
+        String lastDigits = cardInfo.getCardNumber().substring(15);
+
+        // Find and click "Пополнить" button for specific card
+        $x("//*[contains(text(),'" + lastDigits + "')]/ancestor::div[contains(@class,'card')]//button[contains(text(),'Пополнить')]")
+                .shouldBe(enabled)
+                .click();
+
+        return new TransferPage();
+    }
+
+    public void verifyOnDashboard() {
+        $("h1").shouldHave(text("Личный кабинет"));
     }
 
     private int extractBalance(String text) {
-        var start = text.indexOf("баланс: ");
-        var end = text.indexOf(" р.");
-        var value = text.substring(start + 8, end).trim();
-        return Integer.parseInt(value);
-    }
-
-    public TransferPage selectCardToTransfer(DataHelper.CardInfo cardInfo) {
-        $("[data-test-id='" + cardInfo.getTestId() + "'] [data-test-id=action-deposit]").click();
-        return new TransferPage();
+        return Integer.parseInt(text.replaceAll("[^0-9]", ""));
     }
 }
