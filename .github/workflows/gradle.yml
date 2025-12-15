@@ -7,47 +7,73 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
 
       - name: Set up JDK 11
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v2
         with:
           java-version: '11'
-          distribution: 'temurin'
+          distribution: 'adopt'
 
-      - name: Validate Gradle wrapper
-        uses: gradle/wrapper-validation-action@v1
-
-      # Установка Chrome и системных зависимостей
-      - name: Install Chrome and dependencies
+      - name: Установка Chrome
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget unzip libnss3 libxss1 libasound2t64 libatk-bridge2.0-0 libgtk-3-0 xvfb
-          wget -q -O- https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
-          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+          sudo apt-get install -y wget unzip
+          wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+          sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'
           sudo apt-get update
           sudo apt-get install -y google-chrome-stable
+
+      - name: Проверка версии Chrome
+        run: google-chrome --version
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # Запуск приложения и тестов
-      - name: Start SUT and run tests
+      - name: Start SUT
+        # Запускаем банковское приложение
         run: |
+          echo "Запуск банковского приложения..."
           java -jar ./artifacts/app-ibank-build-for-testers.jar &
-          sleep 10
-          xvfb-run -a ./gradlew test --info
+          sleep 5  # Даем приложению время на запуск
+          echo "Проверяем доступность приложения..."
+          curl -s -o /dev/null -w "%{http_code}" http://localhost:9999 || true
+          echo ""
 
-      # Генерация Allure-отчета через Gradle (гарантирует создание отчета)
-      - name: Generate Allure Report via Gradle
-        if: always()
-        run: ./gradlew allureReport
+      - name: Wait for SUT to be ready
+        run: |
+          for i in {1..30}; do
+            if curl -s http://localhost:9999 > /dev/null; then
+              echo "Приложение запущено и готово к работе"
+              break
+            fi
+            echo "Ожидание запуска приложения... попытка $i/30"
+            sleep 2
+          done
 
-      # Публикация отчета на GitHub Pages
-      - name: Deploy Allure Report to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Build with Gradle
+        # Запускаем автотесты
+        run: |
+          ./gradlew clean test --info \
+            -Dselenide.headless=true \
+            -Dselenide.browser=chrome \
+            -Dselenide.baseUrl=http://localhost:9999 \
+            -Dselenide.timeout=20000 \
+            -Dselenide.pageLoadTimeout=30000 \
+            -Dchromeoptions.prefs='{"intl.accept_languages":"ru,ru_RU"}'
+
+      - name: Upload test reports
         if: always()
+        uses: actions/upload-artifact@v2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: gh-pages
-          publish_dir: build/reports/allure-report/allureReport/
+          name: test-reports
+          path: |
+            build/reports/tests/
+            build/test-results/
+
+      - name: Upload allure results
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: allure-results
+          path: build/allure-results/

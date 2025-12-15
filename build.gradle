@@ -3,56 +3,58 @@ plugins {
     id 'io.qameta.allure' version '2.11.2'
 }
 
-group = 'ru.netology'
-version = '1.0-SNAPSHOT'
+group 'ru.netology'
+version '1.0-SNAPSHOT'
 
 sourceCompatibility = 11
-targetCompatibility = 11
 
 repositories {
     mavenCentral()
 }
 
-allure {
-    version = '2.20.1'
-    useJUnit5 {
-        version = '2.20.1'
-    }
-}
-
 dependencies {
-    // --- Основные зависимости для тестов ---
     testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3'
     testImplementation 'com.codeborne:selenide:6.19.0'
-    testImplementation 'io.github.bonigarcia:webdrivermanager:5.6.4'  // Управление драйверами
-
-    // --- Логирование для Allure ---
+    testImplementation 'io.github.bonigarcia:webdrivermanager:5.6.4'
     testImplementation 'io.qameta.allure:allure-selenide:2.20.1'
+    testImplementation 'io.qameta.allure:allure-junit5:2.20.1'
 
-    // --- Lombok ---
-    compileOnly 'org.projectlombok:lombok:1.18.28'
-    annotationProcessor 'org.projectlombok:lombok:1.18.28'
-    testCompileOnly 'org.projectlombok:lombok:1.18.28'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.28'
+    // Добавляем зависимость для CDP v143
+    testImplementation 'org.seleniumhq.selenium:selenium-devtools-v143:4.13.0'
+
+    // Дополнительные зависимости для работы с Selenium 4
+    testImplementation 'org.slf4j:slf4j-simple:2.0.9'
 }
 
 test {
     useJUnitPlatform()
-    // Все системные свойства для Selenide в одном месте
-    systemProperties = [
-            'selenide.headless': System.getProperty('selenide.headless', 'true'),
-            'chromeoptions.prefs': '{"intl.accept_languages":"ru,ru_RU"}', // ИЗМЕНЕНО: русская локаль
-            'selenide.baseUrl': System.getProperty('selenide.baseUrl', 'http://localhost:9999'),
-            'selenide.browser': 'chrome',
-            'selenide.timeout': '15000', // Увеличенный таймаут для стабильности
-            'selenide.pageLoadTimeout': '30000'
-    ]
+    systemProperty 'selenide.headless', System.getProperty('selenide.headless', 'true')
+    systemProperty 'selenide.baseUrl', System.getProperty('selenide.baseUrl', 'http://localhost:9999')
+    systemProperty 'selenide.browser', System.getProperty('selenide.browser', 'chrome')
+    systemProperty 'selenide.pageLoadTimeout', '30000'
+    systemProperty 'selenide.timeout', '15000'
+
+    // Убираем aspectjweaver, если он не нужен
+    // systemProperty 'junit.jupiter.extensions.autodetection.enabled', 'true'
+
+    // Настройки для Chrome
+    systemProperty 'chromeoptions.prefs', '{"intl.accept_languages":"ru,ru_RU"}'
+
+    // Увеличиваем время ожидания для более стабильной работы в CI
+    systemProperty 'selenide.timeout', '20000'
+
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+        showStandardStreams = true
+    }
 }
 
-// Указываем кодировку UTF-8 для компиляции Java и Groovy файлов
-tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8'
-}
-tasks.withType(GroovyCompile).configureEach {
-    groovyOptions.encoding = 'UTF-8'
+allure {
+    version = '2.20.1'
+    autoconfigure = true
+
+    useJUnit5 {
+        version = '2.20.1'
+    }
 }
