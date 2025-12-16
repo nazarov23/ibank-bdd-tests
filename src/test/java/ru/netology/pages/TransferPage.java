@@ -21,7 +21,7 @@ public class TransferPage {
 
     // Приватный метод для проверки состояния страницы
     private void verifyPageIsLoaded() {
-        pageHeading.shouldBe(visible).shouldHave(exactText("Пополнение карты"));
+        pageHeading.shouldBe(visible).shouldHave(exactText("Ваши карты"));
         amountField.shouldBe(visible);
         fromField.shouldBe(visible);
         transferButton.shouldBe(enabled);
