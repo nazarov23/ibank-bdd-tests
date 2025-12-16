@@ -1,4 +1,4 @@
-﻿package ru.netology.pages;
+package ru.netology.pages;
 
 import com.codeborne.selenide.SelenideElement;
 
@@ -11,9 +11,21 @@ public class TransferPage {
     private SelenideElement fromField = $("[data-test-id=from] input");
     private SelenideElement transferButton = $("[data-test-id=action-transfer]");
     private SelenideElement cancelButton = $("[data-test-id=action-cancel]");
+    private SelenideElement errorNotification = $("[data-test-id=error-notification]");
+    private SelenideElement pageHeading = $("h1");
 
     public TransferPage() {
-        $("h1").shouldBe(visible).shouldHave(text("ÐŸÐ¾Ð¿Ð¾Ð»Ð½ÐµÐ½Ð¸Ðµ ÐºÐ°Ñ€Ñ‚Ñ‹"));
+        // Конструктор проверяет состояние элементов, но ничего не возвращает
+        verifyPageIsLoaded();
+    }
+
+    // Приватный метод для проверки состояния страницы
+    private void verifyPageIsLoaded() {
+        pageHeading.shouldBe(visible).shouldHave(exactText("Пополнение карты"));
+        amountField.shouldBe(visible);
+        fromField.shouldBe(visible);
+        transferButton.shouldBe(enabled);
+        cancelButton.shouldBe(enabled);
     }
 
     public void makeTransfer(String amount, String fromCard) {
@@ -32,8 +44,13 @@ public class TransferPage {
         return new DashboardPage();
     }
 
-    public boolean shouldShowError() {
-        $("[data-test-id=error-notification]").shouldBe(visible);
-        return $("[data-test-id=error-notification]").is(visible);
+    public void shouldShowError() {
+        // Метод проверяет видимость ошибки, но не возвращает boolean
+        errorNotification.shouldBe(visible);
+    }
+
+    // Дополнительный метод для проверки текста ошибки (опционально)
+    public void shouldShowErrorWithText(String expectedText) {
+        errorNotification.shouldBe(visible).shouldHave(text(expectedText));
     }
 }

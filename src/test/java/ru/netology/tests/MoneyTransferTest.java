@@ -1,7 +1,6 @@
-﻿package ru.netology.tests;
+package ru.netology.tests;
 
 import com.codeborne.selenide.Configuration;
-import io.github.bonigarcia.wdm.WebDriverManager;
 import org.junit.jupiter.api.*;
 import ru.netology.data.DataHelper;
 import ru.netology.pages.DashboardPage;
@@ -93,3 +92,5 @@ public class MoneyTransferTest {
         var balance = dashboardPage.getCardBalance(firstCard);
     }
 }
+
+

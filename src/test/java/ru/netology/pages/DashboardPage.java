@@ -1,4 +1,4 @@
-﻿package ru.netology.pages;
+package ru.netology.pages;
 
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
@@ -12,13 +12,13 @@ public class DashboardPage {
     private SelenideElement heading = $("h1");
 
     public DashboardPage() {
-        // ÐŸÑ€Ð¾Ð²ÐµÑ€ÑÐµÐ¼, Ñ‡Ñ‚Ð¾ Ð·Ð°Ð³Ð¾Ð»Ð¾Ð²Ð¾Ðº Ð²Ð¸Ð´Ð¸Ð¼
+        // Проверяем, что заголовок видим
         heading.shouldBe(visible);
 
-        // ÐŸÑ€Ð°Ð²Ð¸Ð»ÑŒÐ½Ñ‹Ð¹ ÑÐ¸Ð½Ñ‚Ð°ÐºÑÐ¸Ñ Ð´Ð»Ñ or()
-        heading.shouldHave(or("Ð—Ð°Ð³Ð¾Ð»Ð¾Ð²Ð¾Ðº Ð´Ð¾Ð»Ð¶ÐµÐ½ Ð±Ñ‹Ñ‚ÑŒ 'Ð›Ð¸Ñ‡Ð½Ñ‹Ð¹ ÐºÐ°Ð±Ð¸Ð½ÐµÑ‚' Ð¸Ð»Ð¸ 'Ð’Ð°ÑˆÐ¸ ÐºÐ°Ñ€Ñ‚Ñ‹'",
-                text("Ð›Ð¸Ñ‡Ð½Ñ‹Ð¹ ÐºÐ°Ð±Ð¸Ð½ÐµÑ‚"),
-                text("Ð’Ð°ÑˆÐ¸ ÐºÐ°Ñ€Ñ‚Ñ‹")
+        // Правильный синтаксис для or()
+        heading.shouldHave(or("Заголовок должен быть 'Личный кабинет' или 'Ваши карты'",
+                text("Личный кабинет"),
+                text("Ваши карты")
         ));
     }
 
@@ -29,8 +29,8 @@ public class DashboardPage {
     }
 
     private int extractBalance(String text) {
-        var start = text.indexOf("Ð±Ð°Ð»Ð°Ð½Ñ: ");
-        var end = text.indexOf(" Ñ€.");
+        var start = text.indexOf("баланс: ");
+        var end = text.indexOf(" р.");
         var value = text.substring(start + 8, end).trim();
         return Integer.parseInt(value);
     }
