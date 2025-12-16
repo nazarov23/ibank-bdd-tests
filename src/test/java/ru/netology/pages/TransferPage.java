@@ -6,51 +6,37 @@ import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selenide.$;
 
 public class TransferPage {
-
-    private SelenideElement amountField = $("[data-test-id=amount] input");
-    private SelenideElement fromField = $("[data-test-id=from] input");
-    private SelenideElement transferButton = $("[data-test-id=action-transfer]");
-    private SelenideElement cancelButton = $("[data-test-id=action-cancel]");
-    private SelenideElement errorNotification = $("[data-test-id=error-notification]");
-    private SelenideElement pageHeading = $("h1");
+    private final SelenideElement pageTitle = $("h2[data-test-id='dashboard']");
+    private final SelenideElement transferTitle = $("h1");
+    private final SelenideElement amountInput = $("[data-test-id='amount'] input");
+    private final SelenideElement fromInput = $("[data-test-id='from'] input");
+    private final SelenideElement transferButton = $("[data-test-id='action-transfer']");
+    private final SelenideElement cancelButton = $("[data-test-id='action-cancel']");
 
     public TransferPage() {
-        // Конструктор проверяет состояние элементов, но ничего не возвращает
         verifyPageIsLoaded();
     }
 
-    // Приватный метод для проверки состояния страницы
     private void verifyPageIsLoaded() {
-        pageHeading.shouldBe(visible).shouldHave(exactText("Ваши карты"));
-        amountField.shouldBe(visible);
-        fromField.shouldBe(visible);
-        transferButton.shouldBe(enabled);
-        cancelButton.shouldBe(enabled);
+        pageTitle.shouldHave(text("Личный кабинет"));
+        transferTitle.shouldHave(exactText("Пополнение карты"));
     }
 
-    public void makeTransfer(String amount, String fromCard) {
-        amountField.setValue(amount);
-        fromField.setValue(fromCard);
+    // Этот метод должен называться makeValidTransfer (как в тесте)
+    public DashboardPage makeValidTransfer(String amount, String fromCardNumber) {
+        amountInput.setValue(amount);
+        fromInput.setValue(fromCardNumber);
         transferButton.click();
+        return new DashboardPage();
     }
 
-    public DashboardPage makeValidTransfer(String amount, String fromCard) {
-        makeTransfer(amount, fromCard);
-        return new DashboardPage();
+    // Или добавьте этот метод, если хотите использовать int
+    public DashboardPage makeTransfer(int amount, String fromCardNumber) {
+        return makeValidTransfer(String.valueOf(amount), fromCardNumber);
     }
 
     public DashboardPage cancelTransfer() {
         cancelButton.click();
         return new DashboardPage();
-    }
-
-    public void shouldShowError() {
-        // Метод проверяет видимость ошибки, но не возвращает boolean
-        errorNotification.shouldBe(visible);
-    }
-
-    // Дополнительный метод для проверки текста ошибки (опционально)
-    public void shouldShowErrorWithText(String expectedText) {
-        errorNotification.shouldBe(visible).shouldHave(text(expectedText));
     }
 }
