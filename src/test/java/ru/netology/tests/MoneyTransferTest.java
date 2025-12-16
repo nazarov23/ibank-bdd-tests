@@ -1,4 +1,4 @@
-package ru.netology.tests;
+﻿package ru.netology.tests;
 
 import com.codeborne.selenide.Configuration;
 import io.github.bonigarcia.wdm.WebDriverManager;
@@ -33,93 +33,63 @@ public class MoneyTransferTest {
     }
 
     @Test
-    @DisplayName("Перевод с первой карты на вторую")
+    @DisplayName("ÐŸÐµÑ€ÐµÐ²Ð¾Ð´ Ñ Ð¿ÐµÑ€Ð²Ð¾Ð¹ ÐºÐ°Ñ€Ñ‚Ñ‹ Ð½Ð° Ð²Ñ‚Ð¾Ñ€ÑƒÑŽ")
     void shouldTransferFromFirstToSecond() {
         var firstCardBalance = dashboardPage.getCardBalance(firstCard);
         var secondCardBalance = dashboardPage.getCardBalance(secondCard);
 
-        System.out.println("=== Начало теста: Перевод с первой карты на вторую ===");
-        System.out.println("Начальный баланс первой карты: " + firstCardBalance);
-        System.out.println("Начальный баланс второй карты: " + secondCardBalance);
 
         var amount = 1000;
-        System.out.println("Сумма перевода: " + amount);
 
         var expectedFirstCardBalance = firstCardBalance - amount;
         var expectedSecondCardBalance = secondCardBalance + amount;
 
-        System.out.println("Ожидаемый баланс первой карты после перевода: " + expectedFirstCardBalance);
-        System.out.println("Ожидаемый баланс второй карты после перевода: " + expectedSecondCardBalance);
 
         var transferPage = dashboardPage.selectCardToTransfer(secondCard);
-        System.out.println("Открыта страница перевода");
 
         dashboardPage = transferPage.makeValidTransfer(String.valueOf(amount), firstCard.getCardNumber());
-        System.out.println("Перевод выполнен");
 
         var actualFirstCardBalance = dashboardPage.getCardBalance(firstCard);
         var actualSecondCardBalance = dashboardPage.getCardBalance(secondCard);
 
-        System.out.println("Фактический баланс первой карты: " + actualFirstCardBalance);
-        System.out.println("Фактический баланс второй карты: " + actualSecondCardBalance);
-        System.out.println("=== Конец теста ===");
 
         assertEquals(expectedFirstCardBalance, actualFirstCardBalance);
         assertEquals(expectedSecondCardBalance, actualSecondCardBalance);
     }
 
     @Test
-    @DisplayName("Перевод со второй карты на первую")
+    @DisplayName("ÐŸÐµÑ€ÐµÐ²Ð¾Ð´ ÑÐ¾ Ð²Ñ‚Ð¾Ñ€Ð¾Ð¹ ÐºÐ°Ñ€Ñ‚Ñ‹ Ð½Ð° Ð¿ÐµÑ€Ð²ÑƒÑŽ")
     void shouldTransferFromSecondToFirst() {
         var firstCardBalance = dashboardPage.getCardBalance(firstCard);
         var secondCardBalance = dashboardPage.getCardBalance(secondCard);
 
-        System.out.println("=== Начало теста: Перевод со второй карты на первую ===");
-        System.out.println("Начальный баланс первой карты: " + firstCardBalance);
-        System.out.println("Начальный баланс второй карты: " + secondCardBalance);
 
         var amount = 500;
-        System.out.println("Сумма перевода: " + amount);
 
         var expectedFirstCardBalance = firstCardBalance + amount;
         var expectedSecondCardBalance = secondCardBalance - amount;
 
         var transferPage = dashboardPage.selectCardToTransfer(firstCard);
-        System.out.println("Открыта страница перевода");
 
         dashboardPage = transferPage.makeValidTransfer(String.valueOf(amount), secondCard.getCardNumber());
-        System.out.println("Перевод выполнен");
 
         var actualFirstCardBalance = dashboardPage.getCardBalance(firstCard);
         var actualSecondCardBalance = dashboardPage.getCardBalance(secondCard);
 
-        System.out.println("Фактический баланс первой карты: " + actualFirstCardBalance);
-        System.out.println("Фактический баланс второй карты: " + actualSecondCardBalance);
-        System.out.println("=== Конец теста ===");
 
         assertEquals(expectedFirstCardBalance, actualFirstCardBalance);
         assertEquals(expectedSecondCardBalance, actualSecondCardBalance);
     }
 
     @Test
-    @DisplayName("Отмена перевода")
+    @DisplayName("ÐžÑ‚Ð¼ÐµÐ½Ð° Ð¿ÐµÑ€ÐµÐ²Ð¾Ð´Ð°")
     void shouldCancelTransfer() {
-        System.out.println("=== Начало теста: Отмена перевода ===");
 
         var transferPage = dashboardPage.selectCardToTransfer(secondCard);
-        System.out.println("Открыта страница перевода");
 
         dashboardPage = transferPage.cancelTransfer();
-        System.out.println("Перевод отменен, вернулись на дашборд");
 
-        // Проверяем, что вернулись на дашборд
+        // ÐŸÑ€Ð¾Ð²ÐµÑ€ÑÐµÐ¼, Ñ‡Ñ‚Ð¾ Ð²ÐµÑ€Ð½ÑƒÐ»Ð¸ÑÑŒ Ð½Ð° Ð´Ð°ÑˆÐ±Ð¾Ñ€Ð´
         var balance = dashboardPage.getCardBalance(firstCard);
-        System.out.println("Баланс первой карты после отмены: " + balance);
-        System.out.println("=== Конец теста ===");
-    }
-
-    @AfterEach
-    void tearDown() {
-        com.codeborne.selenide.Selenide.closeWebDriver();
     }
 }

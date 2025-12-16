@@ -1,4 +1,4 @@
-package ru.netology.pages;
+﻿package ru.netology.pages;
 
 import com.codeborne.selenide.SelenideElement;
 
@@ -13,7 +13,7 @@ public class TransferPage {
     private SelenideElement cancelButton = $("[data-test-id=action-cancel]");
 
     public TransferPage() {
-        $("h1").shouldBe(visible).shouldHave(text("Пополнение карты"));
+        $("h1").shouldBe(visible).shouldHave(text("ÐŸÐ¾Ð¿Ð¾Ð»Ð½ÐµÐ½Ð¸Ðµ ÐºÐ°Ñ€Ñ‚Ñ‹"));
     }
 
     public void makeTransfer(String amount, String fromCard) {
