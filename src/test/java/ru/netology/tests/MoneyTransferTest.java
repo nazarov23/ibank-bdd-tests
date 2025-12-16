@@ -16,16 +16,8 @@ public class MoneyTransferTest {
     private DataHelper.CardInfo firstCard;
     private DataHelper.CardInfo secondCard;
 
-    @BeforeAll
-    static void setUpAll() {
-        WebDriverManager.chromedriver().setup();
-    }
-
     @BeforeEach
     void setUp() {
-        Configuration.headless = false;
-        Configuration.browser = "chrome";
-        Configuration.timeout = 10000;
 
         open("http://localhost:9999");
 
